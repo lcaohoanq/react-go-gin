@@ -1,0 +1,64 @@
+name: Go Code Quality Report
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.3"
+          cache: true
+          cache-dependency-path: server/go.sum
+
+      - name: Install dependencies
+        working-directory: ./server
+        run: |
+          go mod tidy
+          go mod download
+
+      - name: Install golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Run golangci-lint with xml output
+        working-directory: ./server
+        run: |
+          golangci-lint run --out-format checkstyle > golangci-lint-report.xml
+
+      - name: Run golangci-lint with html output
+        working-directory: ./server
+        run: |
+          golangci-lint run --out-format html > golangci-lint-report.html
+
+      - name: Upload golangci-lint Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: golangci-lint-report
+          path: ./server/golangci-lint-report.xml
+
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: golangci-lint-report-html
+          path: ./server/golangci-lint-report.html
+
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.CLASSIC_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./server
+          keep_files: true
