@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"github.com/lcaohoanq/react-go-gin/server/internal/constants"
 	"log"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +27,15 @@ func Register(c *gin.Context) {
 		log.Printf("Error parsing input: %v", err)
 		c.JSON(400, gin.H{
 			"error": "Invalid input format",
+		})
+		return
+	}
+
+	match, _ := regexp.MatchString(constants.EmailRegex, input.Name)
+	if !match {
+		c.JSON(400, gin.H{
+			"error":  "Invalid name format",
+			"reason": "name must not contain any number, every first letter need capitalized, not contain any punctuation",
 		})
 		return
 	}
@@ -111,7 +122,8 @@ func Login(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(input); err != nil {
 		c.JSON(400, gin.H{
-			"error": "Invalid input",
+			"error":  "Invalid input",
+			"reason": "Invalid input JSON format",
 		})
 		return
 	}
@@ -119,14 +131,16 @@ func Login(c *gin.Context) {
 	var user models.User
 	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		c.JSON(400, gin.H{
-			"error": "User not found",
+			"error":  "Wrong email or password",
+			"reason": "User with this email does not exist",
 		})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		c.JSON(400, gin.H{
-			"error": "Invalid password",
+			"error":  "Wrong email or password",
+			"reason": "Password is incorrect",
 		})
 		return
 	}
@@ -147,11 +161,18 @@ func Login(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"token": t,
-		"user": gin.H{
-			"id":    user.ID,
-			"name":  user.Name,
-			"email": user.Email,
-			"role":  user.Role,
+		"data": gin.H{
+			"id":     user.ID,
+			"name":   user.Name,
+			"email":  user.Email,
+			"role":   user.Role,
+			"avatar": user.Avatar,
 		},
+	})
+}
+
+func Logout(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "Logout successful",
 	})
 }

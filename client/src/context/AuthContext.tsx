@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { BASE_URL } from '../App';
+import axios from "axios";
 
 type User = {
   id: number;
@@ -26,21 +27,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     if (token && userData) {
-      setUser(JSON.parse(userData));
-      setIsAuthenticated(true);
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Error parsing user data from localStorage:", error);
+        localStorage.removeItem('user'); // Optionally, clear invalid data from localStorage
+      }
     }
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const res = await fetch(`${BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      
+      const res = await axios.post(`${BASE_URL}/auth/login`, { email, password });
+      const data = await res.data;
+      if (res.status !== 200) throw new Error(data.error);
+
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
@@ -52,14 +55,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const res = await fetch(`${BASE_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      
+      const res = await axios.post(`${BASE_URL}/auth/register`, { name, email, password });
+      const data = await res.data;
+      if (res.status !== 200) throw new Error(data.error);
+
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
@@ -89,4 +88,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
-}; 
+};

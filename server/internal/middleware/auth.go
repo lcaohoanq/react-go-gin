@@ -11,22 +11,6 @@ import (
 
 func Protected() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Handle preflight requests with comprehensive CORS headers
-		if c.Request.Method == "OPTIONS" {
-			c.Header("Access-Control-Allow-Origin", "http://localhost:3000")
-			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-			c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept")
-			c.Header("Access-Control-Allow-Credentials", "true")
-			c.Header("Access-Control-Max-Age", "86400") // 24 hours
-			c.Status(http.StatusOK)
-			c.Abort()
-			return
-		}
-
-		// Set CORS headers for all requests
-		c.Header("Access-Control-Allow-Origin", "http://localhost:3000")
-		c.Header("Access-Control-Allow-Credentials", "true")
-
 		// Get authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -67,8 +51,15 @@ func Protected() gin.HandlerFunc {
 			return
 		}
 
-		// Set user ID in context
-		c.Set("user_id", claims["user_id"])
+		// Convert user ID to float64
+		userID, ok := claims["user_id"].(float64)
+		if !ok {
+			c.AbortWithStatusJSON(401, gin.H{
+				"error": "Unauthorized - Invalid user ID",
+			})
+			return
+		}
+		c.Set("user_id", userID)
 		c.Set("role", claims["role"])
 
 		c.Next()

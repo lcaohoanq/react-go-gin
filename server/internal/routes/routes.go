@@ -10,8 +10,14 @@ func SetupRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 
 	// Public routes
-	api.POST("/register", handlers.Register)
-	api.POST("/login", handlers.Login)
+
+	auth := api.Group("/auth")
+	auth.Use()
+	{
+		auth.POST("/register", handlers.Register)
+		auth.POST("/login", handlers.Login)
+		//auth.POST("/logout", handlers.Logout)
+	}
 
 	// Protected routes
 	todos := api.Group("/todos")
@@ -23,5 +29,9 @@ func SetupRoutes(r *gin.Engine) {
 		todos.DELETE("/:id", handlers.DeleteTodo)
 	}
 
-	api.GET("/profile", middleware.Protected(), handlers.GetUserProfile)
+	users := api.Group("/users")
+	users.Use(middleware.Protected())
+	{
+		users.GET("/profile", handlers.GetUserProfile)
+	}
 }

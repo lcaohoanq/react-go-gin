@@ -20,8 +20,8 @@ import {
 } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
-import { BASE_URL } from "../../App";
 import { Todo } from "../TodoList";
+import {userApi} from "../../api/axios.ts";
 
 type UserStats = {
   totalTodos: number;
@@ -41,19 +41,13 @@ type ProfileData = {
 };
 
 const ProfileDashboard = () => {
-  const { user } = useAuth();
-  const token = localStorage.getItem("token");
-
+  useAuth();
   const { data, isLoading } = useQuery<ProfileData>({
     queryKey: ["profile"],
     queryFn: async () => {
-      const res = await fetch(`${BASE_URL}/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error("Failed to fetch profile");
-      return res.json();
+      const res = await userApi.fetchProfile();
+      if (res.status !== 200) throw new Error("Failed to fetch profile");
+      return res.data;
     },
   });
 

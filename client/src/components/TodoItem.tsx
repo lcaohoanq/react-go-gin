@@ -1,15 +1,12 @@
-import { Box, Flex, Text, IconButton, Badge, Spinner } from "@chakra-ui/react";
+import { Flex, Text, IconButton, Badge, Spinner } from "@chakra-ui/react";
 import { FaCheckCircle } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Todo } from "./TodoList";
-import { BASE_URL } from "../App";
 import { todoApi } from "../api/axios";
 
 const TodoItem = ({ todo }: { todo: Todo }) => {
   const queryClient = useQueryClient();
-  const token = localStorage.getItem("token");
-
   const { mutate: updateTodo, isPending: isUpdating } = useMutation({
     mutationFn: async () => {
       const res = await todoApi.updateTodo(todo.ID);
@@ -22,16 +19,11 @@ const TodoItem = ({ todo }: { todo: Todo }) => {
 
   const { mutate: deleteTodo, isPending: isDeleting } = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${BASE_URL}/todos/${todo.ID}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
+      const res = await todoApi.deleteTodo(todo.ID);
+      if (res.status !== 204) {
         throw new Error("Failed to delete todo");
       }
-      return res.json();
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todos"] });

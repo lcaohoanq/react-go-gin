@@ -2,7 +2,6 @@ import { VStack, Heading, Box, Text, Spinner, Center } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import TodoItem from "./TodoItem";
 import TodoForm from "./TodoForm";
-import { BASE_URL } from "../App";
 import { todoApi } from "../api/axios";
 
 export type Todo = {
@@ -12,8 +11,7 @@ export type Todo = {
 };
 
 const TodoList = () => {
-  const token = localStorage.getItem("token");
-
+  localStorage.getItem("token");
   const {
     data: todos,
     isLoading,
@@ -22,6 +20,12 @@ const TodoList = () => {
     queryKey: ["todos"],
     queryFn: async () => {
       const response = await todoApi.getTodos();
+
+      if(response.status !== 200) {
+        console.log("Logging response: ", response);
+        throw new Error(response.data.error);
+      }
+
       return response.data;
     },
   });
